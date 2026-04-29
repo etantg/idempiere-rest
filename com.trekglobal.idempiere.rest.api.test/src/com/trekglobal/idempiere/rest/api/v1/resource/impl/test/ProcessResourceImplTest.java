@@ -37,6 +37,31 @@ import com.trekglobal.idempiere.rest.api.v1.resource.impl.ProcessResourceImpl;
 public class ProcessResourceImplTest extends RestTestCase {
 
 	@Test
+	void runProcessWithExternalTraceId() {
+		ProcessResourceImpl processResource = new ProcessResourceImpl();
+		
+		String externalTraceId = UUID.randomUUID().toString();
+		AuditTraceContext.setExternalTraceId(externalTraceId);				
+		try {
+			String processSlug = "c_bpartner-validate";
+			String jsonText = "{\"C_BPartner_ID\": " + DictionaryIDs.C_BPartner.SEED_FARM.id + " }";
+			Response response = processResource.runProcess(processSlug, jsonText);
+			assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+			String jsonString = response.getEntity().toString();
+			JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
+			int id = jsonObject.getAsJsonObject().get("AD_PInstance_ID").getAsInt();
+			assertTrue(id > 0, "Failed to create process instance");
+			
+			MPInstance pinstance = new MPInstance(Env.getCtx(), id, null);
+	        assertEquals(id, pinstance.get_ID(), "Failed to retrieve process instance");
+			assertEquals(externalTraceId, pinstance.getExternalTraceId(), "Unexpected ExternalTraceId");
+		} finally {
+			AuditTraceContext.clear();
+		}
+
+	}
+	
+	@Test
 	void runJobWithExternalTraceId() {
 		ProcessResourceImpl processResource = new ProcessResourceImpl();
 		

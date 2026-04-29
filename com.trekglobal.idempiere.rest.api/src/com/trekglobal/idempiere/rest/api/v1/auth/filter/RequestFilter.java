@@ -50,6 +50,7 @@ import org.compiere.util.Env;
 import org.compiere.util.KeyNamePair;
 import org.compiere.util.Login;
 import org.compiere.util.Util;
+import org.idempiere.tracking.AuditTraceContext;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
@@ -76,6 +77,8 @@ import com.trekglobal.idempiere.rest.api.v1.jwt.TokenUtils;
 public class RequestFilter implements ContainerRequestFilter {
 	// optional health monitoring key (AD_SysConfig.Name=REST_HEALTH_MONITORING_KEY)
 	private static final String REST_HEALTH_MONITORING_KEY = "REST_HEALTH_MONITORING_KEY";
+	public static final String HEADER_EXTERNAL_ID = "X-External-ID";
+	public static final String PROPERTY_KEY_EXTERNAL_ID = RequestFilter.class.getName() + ".externalId";
 	public static final String LOGIN_NAME = "#LoginName";
 	public static final String LOGIN_CLIENTS = "#LoginClients";
 
@@ -86,6 +89,13 @@ public class RequestFilter implements ContainerRequestFilter {
 	public void filter(ContainerRequestContext requestContext) throws IOException {
 		Properties ctx = new Properties();
 		ServerContext.setCurrentInstance(ctx);
+		
+		String externalId = requestContext.getHeaderString(HEADER_EXTERNAL_ID);
+		if (!Util.isEmpty(externalId)) {
+	        externalId = externalId.trim();
+	        AuditTraceContext.setExternalTraceId(externalId); 
+	        requestContext.setProperty(PROPERTY_KEY_EXTERNAL_ID, externalId);
+		}
 		
 		if (   HttpMethod.OPTIONS.equals(requestContext.getMethod())
 			|| (   HttpMethod.POST.equals(requestContext.getMethod())

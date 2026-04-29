@@ -33,6 +33,7 @@ import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.ext.Provider;
 
 import org.adempiere.util.ServerContext;
+import org.idempiere.tracking.AuditTraceContext;
 
 @Provider
 /**
@@ -48,5 +49,10 @@ public class ResponseFilter implements ContainerResponseFilter {
 	@Override
 	public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) throws IOException {
 		ServerContext.dispose();
+		
+		String externalId = (String) requestContext.getProperty(RequestFilter.PROPERTY_KEY_EXTERNAL_ID);
+        if (externalId != null)
+            responseContext.getHeaders().putSingle(RequestFilter.HEADER_EXTERNAL_ID, externalId);
+        AuditTraceContext.clear();
 	}
 }
